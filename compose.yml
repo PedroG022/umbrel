@@ -10,3 +10,30 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
     stop_grace_period: 1m
+
+  tailscale:
+    build:
+      context: .
+      dockerfile: .docker/tailscale/Dockerfile
+    image: tailscale-auto-register:latest
+
+    container_name: tailscale
+    hostname: ${TAILSCALE_HOSTNAME:-docker-tailscale}
+    env_file:
+      - .env
+    environment:
+      - TS_AUTHKEY=${TAILSCALE_AUTHKEY:-${TAILSCALE_API_KEY:-}}
+      - TS_HOSTNAME=${TAILSCALE_HOSTNAME:-docker-tailscale}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_EXTRA_ARGS=${TAILSCALE_EXTRA_ARGS:-}
+    volumes:
+      - ./tailscale/state:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+      - ./.env:/app/.env:ro
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    restart: always
+
+
