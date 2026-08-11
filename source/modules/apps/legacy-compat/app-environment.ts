@@ -18,11 +18,31 @@ export default async function appEnvironment(umbreld: Umbreld, command: string) 
 	const currentDirname = dirname(currentFilename)
 	const composePath = join(currentDirname, 'docker-compose.yml')
 	const torEnabled = await umbreld.store.get('torEnabled')
+	let appDomainBase = process.env.APP_DOMAIN_BASE || ''
+	if (!appDomainBase) {
+		try {
+			const envPath = join(umbreld.dataDirectory, '.env')
+			if (await fse.pathExists(envPath)) {
+				const envContent = await fse.readFile(envPath, 'utf8')
+				const domainMatch = envContent.match(/^DOMAIN=["']?([^"'\n]+)["']?/m)
+				const subdomainMatch = envContent.match(/^SUBDOMAIN=["']?([^"'\n]+)["']?/m)
+				if (domainMatch && subdomainMatch) {
+					appDomainBase = `${subdomainMatch[1]}.${domainMatch[1]}`
+				} else if (domainMatch) {
+					appDomainBase = domainMatch[1]
+				}
+			}
+		} catch (error) {
+			// fallback below
+		}
+	}
+
 	const options = {
 		stdio: inheritStdio ? 'inherit' : 'pipe',
 		cwd: umbreld.dataDirectory,
 		env: {
 			UMBREL_DATA_DIR: umbreld.dataDirectory,
+			APP_DOMAIN_BASE: appDomainBase,
 			// TODO: Load these from somewhere more appropriate
 			NETWORK_IP: '10.21.0.0',
 			GATEWAY_IP: '10.21.0.1',

@@ -1,12 +1,39 @@
 services:
+  traefik:
+    image: traefik:v3.7
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=umbrel_main_network"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - umbrel_main_network
+    restart: always
+
   umbrel:
     image: dockurr/umbrel
     container_name: umbrel
     pid: host
-    ports:
-      - 80:80
     volumes:
       - ./umbrel:/data
+      - ./.env:/data/.env:ro
       - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.umbrel-dashboard.rule=Host(`${SUBDOMAIN}.${DOMAIN}`)"
+      - "traefik.http.routers.umbrel-dashboard.entrypoints=web"
+      - "traefik.http.services.umbrel-dashboard.loadbalancer.server.port=80"
     restart: always
     stop_grace_period: 1m
+
+networks:
+  umbrel_main_network:
+    name: umbrel_main_network
+    external: true

@@ -206,6 +206,19 @@ source_app() {
   export APP_PROXY_HOSTNAME="app_proxy_${app}"
   export APP_PROXY_PORT=$(cat "${APP_MANIFEST_FILE}" | yq '.port')
   
+  if [[ -z "${APP_DOMAIN_BASE:-}" ]]; then
+    if [[ -f "${UMBREL_ROOT}/.env" ]]; then
+      domain_val=$(grep -E '^DOMAIN=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'") || true
+      subdomain_val=$(grep -E '^SUBDOMAIN=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'") || true
+      if [[ -n "${subdomain_val}" ]] && [[ -n "${domain_val}" ]]; then
+        export APP_DOMAIN_BASE="${subdomain_val}.${domain_val}"
+      elif [[ -n "${domain_val}" ]]; then
+        export APP_DOMAIN_BASE="${domain_val}"
+      fi
+    fi
+  fi
+  export APP_DOMAIN_BASE="${APP_DOMAIN_BASE}"
+  
   export APP_DATA_DIR="${app_data_dir}"
   export APP_DOMAIN="${app_domain}"
   export APP_HIDDEN_SERVICE="not-enabled.onion"
