@@ -30,10 +30,16 @@ services:
       - "traefik.http.routers.umbrel-dashboard.rule=Host(`${SUBDOMAIN}.${DOMAIN}`)"
       - "traefik.http.routers.umbrel-dashboard.entrypoints=web"
       - "traefik.http.services.umbrel-dashboard.loadbalancer.server.port=80"
+    networks:
+      - umbrel_main_network
     restart: always
     stop_grace_period: 1m
 
 networks:
   umbrel_main_network:
     name: umbrel_main_network
-    external: true
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.21.0.0/16
+          gateway: 10.21.0.1
