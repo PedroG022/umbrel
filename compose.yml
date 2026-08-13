@@ -1,4 +1,17 @@
 services:
+  avahi:
+    image: flungo/avahi:latest
+    container_name: avahi
+    network_mode: host
+    restart: always
+    environment:
+      SERVER_HOST_NAME: umbrel
+      SERVER_DOMAIN_NAME: local
+      SERVER_USE_IPV4: "yes"
+      SERVER_USE_IPV6: "yes"
+      SERVER_ALLOW_INTERFACES: eth0
+      SERVER_ENABLE_DBUS: "no"
+
   traefik:
     image: traefik:v3.7
     container_name: traefik
@@ -27,7 +40,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.umbrel-dashboard.rule=Host(`${SUBDOMAIN}.${DOMAIN}`)"
+      - "traefik.http.routers.umbrel-dashboard.rule=Host(`${SUBDOMAIN}.${DOMAIN}`) || Host(`umbrel.local`)"
       - "traefik.http.routers.umbrel-dashboard.entrypoints=web"
       - "traefik.http.services.umbrel-dashboard.loadbalancer.server.port=80"
     networks:
