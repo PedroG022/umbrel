@@ -5,11 +5,11 @@ services:
     network_mode: host
     restart: always
     environment:
-      SERVER_HOST_NAME: umbrel
-      SERVER_DOMAIN_NAME: local
+      SERVER_HOST_NAME: ${LOCAL_HOSTNAME:-umbrel}
+      SERVER_DOMAIN_NAME: ${LOCAL_DOMAIN:-local}
       SERVER_USE_IPV4: "yes"
       SERVER_USE_IPV6: "yes"
-      SERVER_ALLOW_INTERFACES: eth0
+      SERVER_ALLOW_INTERFACES: ${AVAHI_INTERFACE:-eth0}
       SERVER_ENABLE_DBUS: "no"
 
   traefik:
@@ -17,15 +17,30 @@ services:
     container_name: traefik
     command:
       - "--api.insecure=true"
+      - "--log.level=DEBUG"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=umbrel_main_network"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.dnsresolver.acme.dnschallenge=${ENABLE_ACME_DNS:-false}"
+      - "--certificatesresolvers.dnsresolver.acme.dnschallenge.provider=${DNS_PROVIDER:-hostinger}"
+      - "--certificatesresolvers.dnsresolver.acme.email=${ACME_EMAIL:-admin@local}"
+      - "--certificatesresolvers.dnsresolver.acme.storage=/data/traefik/acme.json"
+      - "--certificatesresolvers.dnsresolver.acme.dnschallenge.delaybeforecheck=30"
+      - "--certificatesresolvers.dnsresolver.acme.dnschallenge.disablepropagationcheck=true"
     ports:
       - "80:80"
+      - "443:443"
       - "8080:8080"
+    environment:
+      - HOSTINGER_API_TOKEN=${HOSTINGER_API_TOKEN:-${API_TOKEN:-}}
+      - HOSTINGER_PROPAGATION_TIMEOUT=180
+      - HOSTINGER_POLLING_INTERVAL=10
+      - CLOUDFLARE_DNS_API_TOKEN=${CLOUDFLARE_DNS_API_TOKEN:-${API_TOKEN:-}}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./umbrel/traefik:/data/traefik
     networks:
       - umbrel_main_network
     restart: always
@@ -40,8 +55,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.umbrel-dashboard.rule=Host(`${SUBDOMAIN}.${DOMAIN}`) || Host(`umbrel.local`)"
-      - "traefik.http.routers.umbrel-dashboard.entrypoints=web"
+      # Mode-aware Dashboard Router (web for Modes 1 & 3 HTTP; websecure with TLS for Mode 2 HTTPS)
+      - "traefik.http.routers.umbrel-dashboard.rule=${TRAEFIK_HOST_RULE:-Host(`umbrel.local`)}"
+      - "traefik.http.routers.umbrel-dashboard.entrypoints=${TRAEFIK_ENTRYPOINTS:-web}"
+      - "traefik.http.routers.umbrel-dashboard.tls=${ENABLE_TLS:-false}"
+      - "traefik.http.routers.umbrel-dashboard.tls.certresolver=${TLS_CERT_RESOLVER:-}"
+      - "traefik.http.routers.umbrel-dashboard.tls.domains[0].main=${TLS_DOMAIN_MAIN:-}"
+      - "traefik.http.routers.umbrel-dashboard.tls.domains[0].sans=${TLS_DOMAIN_SANS:-}"
+      - "traefik.http.routers.umbrel-dashboard.service=umbrel-dashboard"
+      # Service definition
       - "traefik.http.services.umbrel-dashboard.loadbalancer.server.port=80"
     networks:
       - umbrel_main_network

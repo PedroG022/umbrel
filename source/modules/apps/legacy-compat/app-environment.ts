@@ -19,22 +19,52 @@ export default async function appEnvironment(umbreld: Umbreld, command: string) 
 	const composePath = join(currentDirname, 'docker-compose.yml')
 	const torEnabled = await umbreld.store.get('torEnabled')
 	let appDomainBase = process.env.APP_DOMAIN_BASE || ''
-	if (!appDomainBase) {
-		try {
-			const envPath = join(umbreld.dataDirectory, '.env')
-			if (await fse.pathExists(envPath)) {
-				const envContent = await fse.readFile(envPath, 'utf8')
+	let appEntrypoints = process.env.APP_ENTRYPOINTS || 'web'
+	let appEnableTls = process.env.APP_ENABLE_TLS || 'false'
+
+	try {
+		const envPath = join(umbreld.dataDirectory, '.env')
+		if (await fse.pathExists(envPath)) {
+			const envContent = await fse.readFile(envPath, 'utf8')
+			const opModeMatch = envContent.match(/^OPERATION_MODE=["']?([^"'\n]+)["']?/m)
+			const opMode = opModeMatch ? opModeMatch[1] : '1'
+
+			if (opMode === '1') {
+				const localHostMatch = envContent.match(/^LOCAL_HOSTNAME=["']?([^"'\n]+)["']?/m)
+				const localDomMatch = envContent.match(/^LOCAL_DOMAIN=["']?([^"'\n]+)["']?/m)
+				const localHost = localHostMatch ? localHostMatch[1] : 'umbrel'
+				const localDom = localDomMatch ? localDomMatch[1] : 'local'
+				if (!appDomainBase) appDomainBase = `${localHost}.${localDom}`
+				appEntrypoints = 'web'
+				appEnableTls = 'false'
+			} else if (opMode === '3') {
+				const tsHostMatch = envContent.match(/^TAILSCALE_HOSTNAME=["']?([^"'\n]+)["']?/m)
+				const tsNetMatch = envContent.match(/^TAILNET_NAME=["']?([^"'\n]+)["']?/m)
+				if (!appDomainBase) {
+					if (tsHostMatch && tsNetMatch && tsNetMatch[1]) {
+						appDomainBase = `${tsHostMatch[1]}.${tsNetMatch[1].replace(/\.$/, '')}`
+					} else if (tsHostMatch) {
+						appDomainBase = tsHostMatch[1]
+					}
+				}
+				appEntrypoints = 'web'
+				appEnableTls = 'false'
+			} else {
 				const domainMatch = envContent.match(/^DOMAIN=["']?([^"'\n]+)["']?/m)
 				const subdomainMatch = envContent.match(/^SUBDOMAIN=["']?([^"'\n]+)["']?/m)
-				if (domainMatch && subdomainMatch) {
-					appDomainBase = `${subdomainMatch[1]}.${domainMatch[1]}`
-				} else if (domainMatch) {
-					appDomainBase = domainMatch[1]
+				if (!appDomainBase) {
+					if (domainMatch && subdomainMatch && subdomainMatch[1]) {
+						appDomainBase = `${subdomainMatch[1]}.${domainMatch[1]}`
+					} else if (domainMatch) {
+						appDomainBase = domainMatch[1]
+					}
 				}
+				appEntrypoints = 'websecure'
+				appEnableTls = 'true'
 			}
-		} catch (error) {
-			// fallback below
 		}
+	} catch (error) {
+		// fallback
 	}
 
 	const options = {
@@ -43,6 +73,9 @@ export default async function appEnvironment(umbreld: Umbreld, command: string) 
 		env: {
 			UMBREL_DATA_DIR: umbreld.dataDirectory,
 			APP_DOMAIN_BASE: appDomainBase,
+			APP_ENTRYPOINTS: appEntrypoints,
+			APP_ENABLE_TLS: appEnableTls,
+			ENABLE_TLS: appEnableTls,
 			// TODO: Load these from somewhere more appropriate
 			NETWORK_IP: '10.21.0.0',
 			GATEWAY_IP: '10.21.0.1',

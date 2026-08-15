@@ -28,7 +28,11 @@ services:
       JWT_SECRET: $JWT_SECRET
     labels:
       - "traefik.enable=true"
+      # Mode-aware App Router (web for Modes 1 & 3 HTTP; websecure with TLS for Mode 2 HTTPS)
       - "traefik.http.routers.${APP_ID}.rule=Host(`${APP_ID}.${APP_DOMAIN_BASE}`)"
-      - "traefik.http.routers.${APP_ID}.entrypoints=web"
+      - "traefik.http.routers.${APP_ID}.entrypoints=${APP_ENTRYPOINTS:-web}"
+      - "traefik.http.routers.${APP_ID}.tls=${APP_ENABLE_TLS:-false}"
+      - "traefik.http.routers.${APP_ID}.service=${APP_ID}"
+      # Service definition
       - "traefik.http.services.${APP_ID}.loadbalancer.server.port=${APP_PROXY_PORT}"
 

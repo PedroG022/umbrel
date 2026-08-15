@@ -206,18 +206,45 @@ source_app() {
   export APP_PROXY_HOSTNAME="app_proxy_${app}"
   export APP_PROXY_PORT=$(cat "${APP_MANIFEST_FILE}" | yq '.port')
   
-  if [[ -z "${APP_DOMAIN_BASE:-}" ]]; then
+  if [[ -z "${APP_DOMAIN_BASE:-}" ]] || [[ -z "${APP_ENTRYPOINTS:-}" ]]; then
     if [[ -f "${UMBREL_ROOT}/.env" ]]; then
-      domain_val=$(grep -E '^DOMAIN=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'") || true
-      subdomain_val=$(grep -E '^SUBDOMAIN=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'") || true
-      if [[ -n "${subdomain_val}" ]] && [[ -n "${domain_val}" ]]; then
-        export APP_DOMAIN_BASE="${subdomain_val}.${domain_val}"
-      elif [[ -n "${domain_val}" ]]; then
-        export APP_DOMAIN_BASE="${domain_val}"
+      op_mode=$(grep -E '^OPERATION_MODE=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'" | tr -d ' ') || true
+      if [[ "${op_mode}" == "1" ]]; then
+        local_host=$(grep -E '^LOCAL_HOSTNAME=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'" | tr -d ' ') || true
+        local_dom=$(grep -E '^LOCAL_DOMAIN=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'" | tr -d ' ') || true
+        export APP_DOMAIN_BASE="${local_host:-umbrel}.${local_dom:-local}"
+        export APP_ENTRYPOINTS="web"
+        export APP_ENABLE_TLS="false"
+        export ENABLE_TLS="false"
+      elif [[ "${op_mode}" == "3" ]]; then
+        ts_host=$(grep -E '^TAILSCALE_HOSTNAME=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'" | tr -d ' ') || true
+        ts_net=$(grep -E '^TAILNET_NAME=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'" | tr -d ' ') || true
+        if [[ -n "${ts_net}" ]]; then
+          export APP_DOMAIN_BASE="${ts_host}.${ts_net%.}"
+        else
+          export APP_DOMAIN_BASE="${ts_host}"
+        fi
+        export APP_ENTRYPOINTS="web"
+        export APP_ENABLE_TLS="false"
+        export ENABLE_TLS="false"
+      else
+        domain_val=$(grep -E '^DOMAIN=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'" | tr -d ' ') || true
+        subdomain_val=$(grep -E '^SUBDOMAIN=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'" | tr -d ' ') || true
+        if [[ -n "${subdomain_val}" ]] && [[ -n "${domain_val}" ]]; then
+          export APP_DOMAIN_BASE="${subdomain_val}.${domain_val}"
+        elif [[ -n "${domain_val}" ]]; then
+          export APP_DOMAIN_BASE="${domain_val}"
+        fi
+        export APP_ENTRYPOINTS="websecure"
+        export APP_ENABLE_TLS="true"
+        export ENABLE_TLS="true"
       fi
     fi
   fi
-  export APP_DOMAIN_BASE="${APP_DOMAIN_BASE}"
+  export APP_DOMAIN_BASE="${APP_DOMAIN_BASE:-umbrel.local}"
+  export APP_ENTRYPOINTS="${APP_ENTRYPOINTS:-web}"
+  export APP_ENABLE_TLS="${APP_ENABLE_TLS:-false}"
+  export ENABLE_TLS="${ENABLE_TLS:-false}"
   
   export APP_DATA_DIR="${app_data_dir}"
   export APP_DOMAIN="${app_domain}"

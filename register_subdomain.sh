@@ -14,14 +14,20 @@
 
 set -euo pipefail
 
-# 1. Load .env file if available
+# 1. Load .env file safely if available
 ENV_FILE="${ENV_FILE:-.env}"
 if [ -f "$ENV_FILE" ]; then
     echo "📄 Loading configuration from $ENV_FILE..."
-    # Export vars without overwriting already exported shell vars
-    set -o allexport
-    source "$ENV_FILE"
-    set +o allexport
+    while IFS='=' read -r key val || [ -n "$key" ]; do
+        # Ignore comments and empty lines
+        [[ "$key" =~ ^[[:space:]]*# ]] && continue
+        [ -z "$key" ] && continue
+        key="$(echo "$key" | xargs)"
+        val="$(echo "$val" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^["'"'"']//' -e 's/["'"'"']$//')"
+        if [ -n "$key" ] && [ -z "${!key:-}" ]; then
+            export "$key"="$val"
+        fi
+    done < "$ENV_FILE"
 fi
 
 # 2. Allow CLI parameters to override env variables
@@ -64,13 +70,22 @@ fi
 # Strip parent domain if SUBDOMAIN was passed as full FQDN (e.g. app.example.com -> app)
 SUBDOMAIN_SHORT="${SUBDOMAIN%.${DOMAIN}}"
 
-# 4. Prepare JSON Payload
-# Hostinger API schema expects a top-level "zone" array containing record definitions.
+# 4. Prepare JSON Payload (registering both subdomain and *.subdomain wildcard)
 PAYLOAD=$(cat <<EOF
 {
   "zone": [
     {
       "name": "${SUBDOMAIN_SHORT}",
+      "type": "${RECORD_TYPE}",
+      "records": [
+        {
+          "content": "${RECORD_CONTENT}"
+        }
+      ],
+      "ttl": ${RECORD_TTL}
+    },
+    {
+      "name": "*.${SUBDOMAIN_SHORT}",
       "type": "${RECORD_TYPE}",
       "records": [
         {
@@ -86,7 +101,7 @@ EOF
 )
 
 echo "🌐 Domain: $DOMAIN"
-echo "📌 Registering Subdomain: $SUBDOMAIN_SHORT.$DOMAIN ($RECORD_TYPE -> $RECORD_CONTENT, TTL: ${RECORD_TTL}s)"
+echo "📌 Registering Subdomain & Wildcard: $SUBDOMAIN_SHORT.$DOMAIN and *.$SUBDOMAIN_SHORT.$DOMAIN ($RECORD_TYPE -> $RECORD_CONTENT, TTL: ${RECORD_TTL}s)"
 
 # 5. Validate payload with Hostinger API prior to applying
 VALIDATE_URL="${API_BASE_URL}/${DOMAIN}/validate"
