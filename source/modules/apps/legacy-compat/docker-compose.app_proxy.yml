@@ -16,7 +16,7 @@ services:
     environment:
       LOG_LEVEL: info
       PROXY_PORT: $APP_PROXY_PORT
-      PROXY_AUTH_ADD: 'true'
+      PROXY_AUTH_ADD: ${APP_PROXY_AUTH_ADD:-true}
       PROXY_AUTH_WHITELIST:
       PROXY_AUTH_BLACKLIST:
       APP_HOST:

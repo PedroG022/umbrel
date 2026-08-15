@@ -21,6 +21,7 @@ export default async function appEnvironment(umbreld: Umbreld, command: string) 
 	let appDomainBase = process.env.APP_DOMAIN_BASE || ''
 	let appEntrypoints = process.env.APP_ENTRYPOINTS || 'web'
 	let appEnableTls = process.env.APP_ENABLE_TLS || 'false'
+	let appProxyAuthAdd = process.env.APP_PROXY_AUTH_ADD || 'true'
 
 	try {
 		const envPath = join(umbreld.dataDirectory, '.env')
@@ -37,6 +38,7 @@ export default async function appEnvironment(umbreld: Umbreld, command: string) 
 				if (!appDomainBase) appDomainBase = `${localHost}.${localDom}`
 				appEntrypoints = 'web'
 				appEnableTls = 'false'
+				appProxyAuthAdd = 'true'
 			} else if (opMode === '3') {
 				const tsHostMatch = envContent.match(/^TAILSCALE_HOSTNAME=["']?([^"'\n]+)["']?/m)
 				const tsNetMatch = envContent.match(/^TAILNET_NAME=["']?([^"'\n]+)["']?/m)
@@ -49,6 +51,7 @@ export default async function appEnvironment(umbreld: Umbreld, command: string) 
 				}
 				appEntrypoints = 'web'
 				appEnableTls = 'false'
+				appProxyAuthAdd = 'true'
 			} else {
 				const domainMatch = envContent.match(/^DOMAIN=["']?([^"'\n]+)["']?/m)
 				const subdomainMatch = envContent.match(/^SUBDOMAIN=["']?([^"'\n]+)["']?/m)
@@ -61,6 +64,7 @@ export default async function appEnvironment(umbreld: Umbreld, command: string) 
 				}
 				appEntrypoints = 'websecure'
 				appEnableTls = 'true'
+				appProxyAuthAdd = 'false'
 			}
 		}
 	} catch (error) {
@@ -76,6 +80,7 @@ export default async function appEnvironment(umbreld: Umbreld, command: string) 
 			APP_ENTRYPOINTS: appEntrypoints,
 			APP_ENABLE_TLS: appEnableTls,
 			ENABLE_TLS: appEnableTls,
+			APP_PROXY_AUTH_ADD: appProxyAuthAdd,
 			// TODO: Load these from somewhere more appropriate
 			NETWORK_IP: '10.21.0.0',
 			GATEWAY_IP: '10.21.0.1',

@@ -22,40 +22,62 @@ Docker container of [Umbrel](https://umbrel.com/umbrelos), an OS for self-hostin
 - Supports installing and running Umbrel apps
 - Uses the host Docker daemon for app containers
 
-## Usage  🐳
+## Quick Start 🚀
 
-##### Docker Compose:
+### 1. Proxmox VE (LXC Container)
+Run the following command directly on your Proxmox VE host shell to create an LXC container with Docker and TUN pass-through:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/PedroG022/umbrel/refactor/proxmox-lxc.sh)"
+```
+
+### 2. Manual / Existing Linux Host
+
+1. Clone the repository:
+   ```bash
+   git clone -b refactor https://github.com/PedroG022/umbrel.git
+   cd umbrel
+   ```
+
+2. Run the interactive setup wizard:
+   ```bash
+   chmod +x setup.sh
+   ./setup.sh
+   ```
+
+---
+
+## Operating Modes 🌐
+
+The setup script configures one of three network and access modes:
+
+1. **Mode 1: Local Network Only (mDNS)**
+   - Accessible at `http://umbrel.local`
+   - Avahi mDNS discovery enabled, HTTP-only.
+2. **Mode 2: Private Domain via VPN with SSL**
+   - Accessible at `https://umbrel.<your-domain>/` (and wildcard `*.umbrel.<your-domain>`)
+   - Automatic DNS-01 Let's Encrypt certificates via Traefik.
+   - Mode-aware app subdomains (`https://<app>.umbrel.<your-domain>/`).
+3. **Mode 3: Tailscale MagicDNS / Remote Network**
+   - Accessible via Tailscale hostname (e.g. `http://<node>.<tailnet>.ts.net/`).
+
+---
+
+## Manual Docker Compose 🐳
 
 ```yaml
 services:
   umbrel:
-    image: dockurr/umbrel
+    image: ghcr.io/pedrog022/umbrel:latest
     container_name: umbrel
     pid: host
-    ports:
-      - 80:80
+    network_mode: host
     volumes:
       - ./umbrel:/data
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
     stop_grace_period: 1m
 ```
-
-##### Docker CLI:
-
-```bash
-docker run -it --rm --name umbrel --pid=host -p 80:80 -v "${PWD:-.}/umbrel:/data" -v "/var/run/docker.sock:/var/run/docker.sock" --stop-timeout 60 docker.io/dockurr/umbrel
-```
-
-##### GitHub Codespaces:
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/dockur/umbrel)
-
-## Screenshot 📸
-
-<div align="center">
-<a href="https://github.com/dockur/umbrel"><img src="https://raw.githubusercontent.com/dockur/umbrel/master/.github/screen.png" title="Screenshot" style="max-width:100%;" width="256" /></a>
-</div>
 
 ## FAQ 💬
 

@@ -216,6 +216,7 @@ source_app() {
         export APP_ENTRYPOINTS="web"
         export APP_ENABLE_TLS="false"
         export ENABLE_TLS="false"
+        export APP_PROXY_AUTH_ADD="true"
       elif [[ "${op_mode}" == "3" ]]; then
         ts_host=$(grep -E '^TAILSCALE_HOSTNAME=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'" | tr -d ' ') || true
         ts_net=$(grep -E '^TAILNET_NAME=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'" | tr -d ' ') || true
@@ -227,6 +228,7 @@ source_app() {
         export APP_ENTRYPOINTS="web"
         export APP_ENABLE_TLS="false"
         export ENABLE_TLS="false"
+        export APP_PROXY_AUTH_ADD="true"
       else
         domain_val=$(grep -E '^DOMAIN=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'" | tr -d ' ') || true
         subdomain_val=$(grep -E '^SUBDOMAIN=' "${UMBREL_ROOT}/.env" | cut -d '=' -f 2 | tr -d '"' | tr -d "'" | tr -d ' ') || true
@@ -238,6 +240,7 @@ source_app() {
         export APP_ENTRYPOINTS="websecure"
         export APP_ENABLE_TLS="true"
         export ENABLE_TLS="true"
+        export APP_PROXY_AUTH_ADD="false"
       fi
     fi
   fi
@@ -245,6 +248,7 @@ source_app() {
   export APP_ENTRYPOINTS="${APP_ENTRYPOINTS:-web}"
   export APP_ENABLE_TLS="${APP_ENABLE_TLS:-false}"
   export ENABLE_TLS="${ENABLE_TLS:-false}"
+  export APP_PROXY_AUTH_ADD="${APP_PROXY_AUTH_ADD:-true}"
   
   export APP_DATA_DIR="${app_data_dir}"
   export APP_DOMAIN="${app_domain}"
