@@ -11,6 +11,7 @@ ADD https://github.com/getumbrel/umbrel.git#${VERSION_ARG} /
 
 # Apply custom patches
 COPY source /packages/umbreld/source
+COPY ui /packages/ui
 
 #########################################################################
 # ui build stage
