@@ -28,14 +28,14 @@ Docker container of [Umbrel](https://umbrel.com/umbrelos), an OS for self-hostin
 Run the following command directly on your Proxmox VE host shell to create an LXC container with Docker and TUN pass-through:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/PedroG022/umbrel/refactor/proxmox-lxc.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/PedroG022/umbrel/main/proxmox-lxc.sh)"
 ```
 
 ### 2. Manual / Existing Linux Host
 
 1. Clone the repository:
    ```bash
-   git clone -b refactor https://github.com/PedroG022/umbrel.git
+   git clone https://github.com/PedroG022/umbrel.git
    cd umbrel
    ```
 

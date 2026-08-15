@@ -101,8 +101,8 @@ echo ""
 CT_PASSWORD="${CT_PASSWORD:-123456}"
 
 # 10. Git Branch
-read -r -p "$(echo -e "${CYAN}❯ Umbrel Git Branch [default: refactor]: ${NC}")" GIT_BRANCH
-GIT_BRANCH="${GIT_BRANCH:-refactor}"
+read -r -p "$(echo -e "${CYAN}❯ Umbrel Git Branch [default: main]: ${NC}")" GIT_BRANCH
+GIT_BRANCH="${GIT_BRANCH:-main}"
 
 echo -e "\n${CYAN}───────────────────────────────────────────────────────────────────${NC}"
 echo -e "${BOLD}Summary of Container Settings:${NC}"
